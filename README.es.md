@@ -1,5 +1,7 @@
 # Mascota de Claude
 
+[Read in English](README.md)
+
 Un muñeco en pixeles que aparece encima de cualquier ventana de tu Mac cuando una sesión de
 **Claude Code** te necesita: te hizo una pregunta, pide permiso o terminó y te toca a ti.
 
