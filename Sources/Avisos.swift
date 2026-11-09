@@ -91,9 +91,10 @@ extension Control {
             }
             if laEstasViendo { anotar("  no lo muestro: estás viendo esa conversación"); return }
             guard case .dijo(let dicho)? = e.ultimo else { anotar("  no lo muestro: tarea programada"); return }
-            mostrar(Aviso(sesion: sesion, titulo: "Claude te necesita", detalle: recortar(dicho ?? "Terminó y te toca a ti.", 110), proyecto: proyecto))
+            mostrarSiSigue(Aviso(sesion: sesion, titulo: "Claude te necesita", detalle: recortar(dicho ?? "Terminó y te toca a ti.", 110), proyecto: proyecto))
 
         case "/listo": // le respondiste en esa sesión (o tomó un mensaje que tenías en cola)
+            if pendientes.removeValue(forKey: sesion) != nil { anotar("  no lo muestro: siguió trabajando") }
             quitar(sesion)
 
         case "/prueba":

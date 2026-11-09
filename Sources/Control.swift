@@ -12,6 +12,9 @@ final class Control: NSObject, NSApplicationDelegate {
     /// Cada vez que se muestra o se esconde sube, para que un desvanecimiento viejo no apague uno nuevo.
     private var turno = 0
     private var mostradaEn = Date.distantPast
+    /// "Terminó" en espera: si Claude sigue con un mensaje en cola, el "respondiste" llega enseguida
+    /// y el aviso se cancela antes de salir (antes aparecía y desaparecía, y solo se oía el sonido).
+    var pendientes: [String: UUID] = [:]
 
     func applicationDidFinishLaunching(_ n: Notification) {
         vista = Vista(frame: NSRect(x: 0, y: 0, width: Vista.ancho, height: Vista.alto))
@@ -66,7 +69,11 @@ final class Control: NSObject, NSApplicationDelegate {
         mostradaEn = Date()
         vista.t = 0
         if !Config.sonido.isEmpty {
-            DispatchQueue.main.asyncAfter(deadline: .now() + Double(Vista.alerta)) { NSSound(named: Config.sonido)?.play() }
+            // Solo suena si sigue en pantalla: nunca un sonido sin muñeco.
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(Vista.alerta)) { [weak self] in
+                guard let self, !self.vista.avisos.isEmpty, self.panel.isVisible, self.panel.alphaValue > 0.5 else { return }
+                NSSound(named: Config.sonido)?.play()
+            }
         }
         if reloj == nil {
             reloj = Timer.scheduledTimer(withTimeInterval: 1.0 / 30, repeats: true) { [weak self] _ in
@@ -79,6 +86,16 @@ final class Control: NSObject, NSApplicationDelegate {
             vigilante = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in self?.vigilar() }
         }
         vista.needsDisplay = true
+    }
+
+    func mostrarSiSigue(_ a: Aviso) {
+        let ficha = UUID()
+        pendientes[a.sesion] = ficha
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
+            guard let self, self.pendientes[a.sesion] == ficha else { return }
+            self.pendientes.removeValue(forKey: a.sesion)
+            self.mostrar(a)
+        }
     }
 
     func quitar(_ sesion: String) {
